@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>간호학과 의학용어 퀴즈</title>
+<style>
+  :root{
+    --sky:#bfe7fb; --sky-d:#7cc8f0; --blue:#1e88c8; --navy:#0d4a73;
+    --red:#e53950; --red-d:#b71c32; --green:#1faa6b; --white:#fff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{min-height:100%}
+  body{
+    font-family:"Pretendard","Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    background:linear-gradient(180deg,#d9f1fd 0%,#a9dcf7 55%,#8fd0f3 100%);
+    color:var(--navy);
+    display:flex;justify-content:center;align-items:flex-start;
+    padding:16px 12px 32px;
+    position:relative;overflow-x:hidden;
+  }
+  /* ===== 배경 장식 ===== */
+  .deco{position:fixed;pointer-events:none;z-index:0;opacity:.55}
+  .deco svg{width:100%;height:100%;display:block}
+  .d1{width:54px;height:70px;left:5%;top:12%;animation:float 6s ease-in-out infinite}
+  .d2{width:40px;height:52px;right:7%;top:20%;animation:float 7s ease-in-out infinite .8s}
+  .d3{width:140px;height:60px;left:3%;bottom:10%;transform:rotate(-25deg);animation:float 8s ease-in-out infinite .4s}
+  .d4{width:70px;height:70px;right:5%;bottom:14%;animation:float 9s ease-in-out infinite 1.2s}
+  .d5{width:34px;height:44px;left:42%;top:4%;animation:float 6.5s ease-in-out infinite 2s}
+  .d6{width:150px;height:60px;right:3%;top:48%;transform:rotate(18deg);animation:float 8.5s ease-in-out infinite 1s}
+  @keyframes float{0%,100%{translate:0 0}50%{translate:0 -14px}}
+
+  .app{
+    position:relative;z-index:1;width:100%;max-width:640px;
+    background:rgba(255,255,255,.92);
+    border:3px solid var(--sky-d);border-radius:26px;
+    box-shadow:0 10px 30px rgba(13,74,115,.22);
+    overflow:hidden;
+  }
+  .topbar{
+    background:linear-gradient(90deg,var(--blue),#37a6e0);
+    color:#fff;padding:12px 18px;display:flex;align-items:center;gap:12px;
+  }
+  .topbar .logo{width:38px;height:38px;flex:none}
+  .topbar h1{font-size:1.15rem;line-height:1.2}
+  .topbar small{opacity:.9;font-size:.78rem}
+  .ecg{display:block;width:100%;height:28px;background:#eaf7fe}
+  .screen{display:none;padding:20px 20px 24px;animation:fade .35s ease}
+  .screen.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* ===== 시작 / 결과 ===== */
+  .center{text-align:center}
+  .hero{width:100%;max-width:300px;margin:4px auto 10px;display:block}
+  .center h2{font-size:1.5rem;margin-bottom:8px}
+  .center p{line-height:1.6;color:#2b6a8f;margin-bottom:6px}
+  .rules{
+    list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 20px
+  }
+  .rules li{background:#e6f5fd;border-radius:14px;padding:10px 4px;font-size:.85rem;font-weight:700}
+  .rules b{display:block;font-size:1.3rem;color:var(--red)}
+  .btn{
+    border:none;cursor:pointer;font-family:inherit;font-weight:800;font-size:1.05rem;
+    padding:14px 30px;border-radius:999px;color:#fff;
+    background:linear-gradient(180deg,#f0566b,var(--red-d));
+    box-shadow:0 5px 0 #8c1427,0 8px 14px rgba(0,0,0,.2);
+    transition:transform .1s, box-shadow .1s;
+  }
+  .btn:hover{filter:brightness(1.06)}
+  .btn:active{transform:translateY(4px);box-shadow:0 1px 0 #8c1427}
+  .btn.blue{background:linear-gradient(180deg,#46b3ea,var(--blue));box-shadow:0 5px 0 #0f5f8f,0 8px 14px rgba(0,0,0,.2)}
+  .btn.blue:active{box-shadow:0 1px 0 #0f5f8f}
+
+  /* ===== 퀴즈 ===== */
+  .status{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;font-weight:800}
+  .chip{background:#e6f5fd;border-radius:999px;padding:6px 14px;font-size:.92rem;white-space:nowrap}
+  .chip.score{background:#ffe9ed;color:var(--red-d)}
+  /* 문제별 점수판 */
+  .board{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-bottom:12px}
+  .cell{background:#e6f5fd;border:2px solid transparent;border-radius:9px;text-align:center;padding:3px 0;font-size:.68rem;font-weight:800;color:#4a86a8;line-height:1.25}
+  .cell b{display:block;font-size:.9rem}
+  .cell.cur{background:#fff;border-color:var(--blue);color:var(--blue)}
+  .cell.ok{background:#dff7ec;color:#0e7c4a}
+  .cell.no{background:#ffe5e9;color:var(--red-d)}
+  .timer-wrap{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .timer-bar{flex:1;height:14px;background:#dff1fb;border-radius:999px;overflow:hidden;border:2px solid var(--sky-d)}
+  .timer-fill{height:100%;width:100%;background:linear-gradient(90deg,#58c4f5,#1e88c8);border-radius:999px;transition:width .1s linear}
+  .timer-fill.warn{background:linear-gradient(90deg,#ff8a65,var(--red))}
+  .timer-num{
+    width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;
+    background:var(--blue);color:#fff;font-size:1.25rem;font-weight:900;border:3px solid #fff;
+    box-shadow:0 0 0 3px var(--sky-d);
+  }
+  .timer-num.warn{background:var(--red);box-shadow:0 0 0 3px #ffb3be;animation:pulse .6s infinite}
+  @keyframes pulse{50%{transform:scale(1.12)}}
+
+  .qcard{
+    position:relative;background:linear-gradient(180deg,#f4fbff,#e3f4fd);
+    border:2px dashed var(--sky-d);border-radius:20px;padding:20px 16px 18px;text-align:center;margin-bottom:14px;
+  }
+  .qcard .tag{display:inline-block;background:var(--red);color:#fff;font-size:.78rem;font-weight:800;padding:3px 12px;border-radius:999px;margin-bottom:8px}
+  .qcard .meaning{font-size:1.9rem;font-weight:900;color:var(--navy);word-break:keep-all}
+  .qcard .sub{font-size:.88rem;color:#4a86a8;margin-top:6px}
+  .qcard .drop{position:absolute;width:22px;opacity:.85}
+  .qcard .drop.l{left:12px;top:12px}
+  .qcard .drop.r{right:12px;bottom:12px}
+
+  .options{display:grid;gap:10px}
+  .opt{
+    display:flex;align-items:center;gap:12px;text-align:left;
+    font-family:inherit;font-size:1.05rem;font-weight:700;color:var(--navy);
+    background:#fff;border:3px solid var(--sky-d);border-radius:16px;padding:12px 14px;cursor:pointer;
+    transition:transform .08s, background .15s, border-color .15s;min-height:54px;
+  }
+  .opt:hover:not(:disabled){background:#eaf7fe;transform:translateX(3px)}
+  .opt .let{
+    width:32px;height:32px;flex:none;border-radius:50%;display:grid;place-items:center;
+    background:var(--sky-d);color:#fff;font-weight:900;
+  }
+  .opt .txt{word-break:break-word}
+  .opt:disabled{cursor:default}
+  .opt.correct{background:#dff7ec;border-color:var(--green)}
+  .opt.correct .let{background:var(--green)}
+  .opt.wrong{background:#ffe5e9;border-color:var(--red)}
+  .opt.wrong .let{background:var(--red)}
+  .opt.dim{opacity:.55}
+  .opt.shake{animation:shake .4s}
+  @keyframes shake{25%{translate:-6px 0}75%{translate:6px 0}}
+
+  .feedback{display:none;margin-top:14px;border-radius:16px;padding:14px 16px;line-height:1.55}
+  .feedback.show{display:block;animation:fade .3s}
+  .feedback.ok{background:#dff7ec;border:2px solid var(--green)}
+  .feedback.no{background:#ffe5e9;border:2px solid var(--red)}
+  .feedback .head{font-size:1.2rem;font-weight:900;margin-bottom:4px}
+  .feedback.ok .head{color:#0e7c4a}
+  .feedback.no .head{color:var(--red-d)}
+  .feedback .note{font-size:.92rem;color:#35566b}
+  .fb-score{display:inline-block;margin:2px 0 8px;padding:5px 14px;border-radius:999px;font-weight:900;font-size:1rem;color:#fff}
+  .feedback.ok .fb-score{background:var(--green)}
+  .feedback.no .fb-score{background:var(--red)}
+  .nextrow{display:none;text-align:center;margin-top:16px}
+  .nextrow.show{display:block}
+
+  /* ===== 결과 ===== */
+  .final{
+    width:170px;height:170px;margin:6px auto 10px;border-radius:50%;
+    display:grid;place-items:center;
+    background:radial-gradient(circle at 35% 30%,#ff8a9b,var(--red) 60%,var(--red-d));
+    color:#fff;box-shadow:0 8px 20px rgba(183,28,50,.4),inset 0 -8px 14px rgba(0,0,0,.15);
+  }
+  .final b{font-size:3.4rem;line-height:1}
+  .final span{font-size:.95rem;display:block;margin-top:-26px;font-weight:700}
+  .msg{font-size:1.2rem;font-weight:800;margin:6px 0}
+  .review{list-style:none;text-align:left;margin:16px 0 20px;display:grid;gap:6px}
+  .review li{display:flex;gap:8px;align-items:center;background:#f0f9fe;border-radius:12px;padding:8px 12px;font-size:.92rem}
+  .review .mark{font-weight:900;width:20px;text-align:center}
+  .review .mark.o{color:var(--green)}
+  .review .mark.x{color:var(--red)}
+  .review .en{margin-left:auto;font-weight:800;color:var(--blue);text-align:right}
+  .review .pt{font-weight:900;min-width:44px;text-align:right}
+  .review .pt.o{color:var(--green)}
+  .review .pt.x{color:var(--red)}
+
+  @media (max-width:480px){
+    body{padding:8px 6px 24px}
+    .screen{padding:16px 14px 20px}
+    .qcard .meaning{font-size:1.55rem}
+    .opt{font-size:.98rem;padding:10px 12px}
+    .topbar h1{font-size:1rem}
+    .final{width:150px;height:150px}.final b{font-size:3rem}
+    .review li{flex-wrap:wrap}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- 배경 장식: 혈액방울, 주사기, 십자가, 하트 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="drop" viewBox="0 0 40 52">
+      <path d="M20 2 C20 2 3 24 3 35 a17 17 0 0 0 34 0 C37 24 20 2 20 2z" fill="#e53950"/>
+      <ellipse cx="13" cy="33" rx="4" ry="7" fill="#fff" opacity=".45" transform="rotate(20 13 33)"/>
+    </symbol>
+    <symbol id="syringe" viewBox="0 0 200 60">
+      <rect x="2" y="26" width="26" height="8" rx="3" fill="#90a4ae"/>
+      <rect x="26" y="14" width="8" height="32" rx="3" fill="#607d8b"/>
+      <rect x="34" y="18" width="100" height="24" rx="5" fill="#fff" stroke="#607d8b" stroke-width="3"/>
+      <rect x="34" y="20" width="62" height="20" rx="4" fill="#e53950" opacity=".85"/>
+      <g stroke="#607d8b" stroke-width="2"><path d="M60 18v8M80 18v8M100 18v8M120 18v8"/></g>
+      <rect x="132" y="24" width="14" height="12" fill="#b0bec5"/>
+      <rect x="144" y="28" width="52" height="4" rx="2" fill="#78909c"/>
+      <rect x="130" y="12" width="6" height="36" rx="2" fill="#607d8b"/>
+    </symbol>
+    <symbol id="cross" viewBox="0 0 60 60">
+      <rect x="4" y="4" width="52" height="52" rx="14" fill="#fff" stroke="#e53950" stroke-width="4"/>
+      <path d="M24 12h12v12h12v12H36v12H24V36H12V24h12z" fill="#e53950"/>
+    </symbol>
+    <symbol id="heart" viewBox="0 0 60 56">
+      <path d="M30 54 C6 36 2 22 2 15 A13 13 0 0 1 30 9 A13 13 0 0 1 58 15 C58 22 54 36 30 54z" fill="#f0566b"/>
+      <path d="M8 28h14l5-10 8 20 5-10h12" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+  </defs>
+</svg>
+<div class="deco d1"><svg><use href="#drop"/></svg></div>
+<div class="deco d2"><svg><use href="#drop"/></svg></div>
+<div class="deco d3"><svg><use href="#syringe"/></svg></div>
+<div class="deco d4"><svg><use href="#cross"/></svg></div>
+<div class="deco d5"><svg><use href="#drop"/></svg></div>
+<div class="deco d6"><svg><use href="#syringe"/></svg></div>
+
+<main class="app">
+  <header class="topbar">
+    <svg class="logo"><use href="#cross"/></svg>
+    <div>
+      <h1>간호학과 의학용어 퀴즈</h1>
+      <small>뜻을 보고 알맞은 의학용어를 고르세요</small>
+    </div>
+  </header>
+  <svg class="ecg" viewBox="0 0 600 28" preserveAspectRatio="none" aria-hidden="true">
+    <polyline points="0,14 120,14 140,14 150,3 162,25 174,6 184,14 330,14 350,14 360,3 372,25 384,6 394,14 600,14"
+      fill="none" stroke="#e53950" stroke-width="2.5" stroke-linejoin="round"/>
+  </svg>
+
+  <!-- 시작 화면 -->
+  <section id="screen-start" class="screen active center">
+    <svg class="hero" viewBox="0 0 300 170" aria-hidden="true">
+      <circle cx="150" cy="85" r="78" fill="#d3effc"/>
+      <use href="#heart" x="104" y="40" width="92" height="86"/>
+      <use href="#syringe" x="20" y="20" width="150" height="45" transform="rotate(-18 95 42)"/>
+      <use href="#drop" x="222" y="30" width="38" height="50"/>
+      <use href="#drop" x="236" y="96" width="24" height="32"/>
+      <use href="#cross" x="30" y="100" width="50" height="50"/>
+    </svg>
+    <h2>의학용어 마스터에 도전!</h2>
+    <p>한글 뜻을 보고 4개의 보기 중<br>알맞은 의학용어를 골라 보세요.</p>
+    <ul class="rules">
+      <li><b>10</b>문제</li>
+      <li><b>10초</b>제한시간</li>
+      <li><b>100</b>점 만점</li>
+    </ul>
+    <button class="btn" id="btn-start">시작하기 💉</button>
+  </section>
+
+  <!-- 퀴즈 화면 -->
+  <section id="screen-quiz" class="screen">
+    <div class="status">
+      <span class="chip" id="progress">문제 1 / 10</span>
+      <span class="chip score">점수 <span id="score">0</span>점</span>
+    </div>
+    <div class="board" id="board" aria-label="문제별 점수"></div>
+    <div class="timer-wrap">
+      <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+      <div class="timer-num" id="timer-num">10</div>
+    </div>
+    <div class="qcard">
+      <svg class="drop l" viewBox="0 0 40 52"><use href="#drop"/></svg>
+      <span class="tag">다음 뜻에 해당하는 의학용어는?</span>
+      <div class="meaning" id="meaning">-</div>
+      <div class="sub">정답 1개를 선택하세요</div>
+      <svg class="drop r" viewBox="0 0 40 52"><use href="#drop"/></svg>
+    </div>
+    <div class="options" id="options"></div>
+    <div class="feedback" id="feedback" aria-live="polite">
+      <div class="head" id="fb-head"></div>
+      <div class="fb-score" id="fb-score"></div>
+      <div class="note" id="fb-note"></div>
+    </div>
+    <div class="nextrow" id="nextrow">
+      <button class="btn blue" id="btn-next">다음 문제 ▶</button>
+    </div>
+  </section>
+
+  <!-- 결과 화면 -->
+  <section id="screen-result" class="screen center">
+    <h2>최종 결과</h2>
+    <div class="final"><div><b id="final-score">0</b><br><span>/ 100점</span></div></div>
+    <div class="msg" id="final-msg"></div>
+    <p id="final-detail"></p>
+    <ul class="review" id="review"></ul>
+    <button class="btn" id="btn-restart">다시 시작하기 🔄</button>
+  </section>
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  var TIME_LIMIT = 10;      // 문제당 제한 시간(초)
+  var POINT = 10;           // 정답 1개당 점수
+
+  // 의학용어 문제 (모두 실제 의학용어 기준)
+  var QUESTIONS = [
+    { ko:"고혈압", answer:"Hypertension",
+      wrong:["Hypotension","Hyperglycemia","Hypoxia"],
+      note:"hyper-(과도한, 높은) + tension(압력·긴장). 반대말 Hypotension은 저혈압입니다." },
+    { ko:"빈혈", answer:"Anemia",
+      wrong:["Leukemia","Hemophilia","Hematoma"],
+      note:"an-(없음, 결핍) + -emia(혈액 상태). 적혈구나 혈색소가 부족한 상태입니다. Leukemia는 백혈병입니다." },
+    { ko:"심근경색", answer:"Myocardial infarction",
+      wrong:["Angina pectoris","Arrhythmia","Cardiomegaly"],
+      note:"myo(근육) + cardi(심장) + infarction(경색). Angina pectoris는 협심증, Arrhythmia는 부정맥, Cardiomegaly는 심비대입니다." },
+    { ko:"폐렴", answer:"Pneumonia",
+      wrong:["Pneumothorax","Bronchitis","Asthma"],
+      note:"pneumon(폐) + -ia(상태). Pneumothorax는 기흉, Bronchitis는 기관지염, Asthma는 천식입니다." },
+    { ko:"당뇨병", answer:"Diabetes mellitus",
+      wrong:["Hypoglycemia","Hyperthyroidism","Hyperlipidemia"],
+      note:"Diabetes mellitus는 혈당 조절 이상으로 생기는 대사 질환입니다. Hypoglycemia는 저혈당, Hyperthyroidism은 갑상샘기능항진증입니다." },
+    { ko:"호흡곤란", answer:"Dyspnea",
+      wrong:["Apnea","Tachypnea","Cyanosis"],
+      note:"dys-(곤란, 이상) + -pnea(호흡). Apnea는 무호흡, Tachypnea는 빠른호흡(빈호흡), Cyanosis는 청색증입니다." },
+    { ko:"빈맥", answer:"Tachycardia",
+      wrong:["Bradycardia","Arrhythmia","Palpitation"],
+      note:"tachy-(빠른) + cardia(심장). 성인 안정 시 심박수가 분당 100회를 넘는 상태입니다. Bradycardia는 서맥입니다." },
+    { ko:"부종", answer:"Edema",
+      wrong:["Ascites","Dehydration","Jaundice"],
+      note:"Edema는 조직 사이에 체액이 과도하게 고인 상태입니다. Ascites는 복수, Dehydration은 탈수, Jaundice는 황달입니다." },
+    { ko:"혈뇨", answer:"Hematuria",
+      wrong:["Dysuria","Oliguria","Proteinuria"],
+      note:"hemat(혈액) + -uria(소변). Dysuria는 배뇨통, Oliguria는 소변량 감소(핍뇨), Proteinuria는 단백뇨입니다." },
+    { ko:"위염", answer:"Gastritis",
+      wrong:["Colitis","Hepatitis","Esophagitis"],
+      note:"gastr(위) + -itis(염증). Colitis는 대장염, Hepatitis는 간염, Esophagitis는 식도염입니다." }
+  ];
+
+  var $ = function(id){ return document.getElementById(id); };
+  var screens = { start:$("screen-start"), quiz:$("screen-quiz"), result:$("screen-result") };
+
+  var order = [], idx = 0, score = 0, locked = false;
+  var timerId = null, deadline = 0, records = [];
+
+  function show(name){
+    for (var k in screens) screens[k].classList.toggle("active", k === name);
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+  function shuffle(arr){
+    var a = arr.slice();
+    for (var i=a.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t=a[i]; a[i]=a[j]; a[j]=t;
+    }
+    return a;
+  }
+
+  // 문제별 점수판 갱신: 푼 문제는 얻은 점수, 현재 문제는 강조, 남은 문제는 "-"
+  function updateBoard(){
+    var board = $("board");
+    var html = "";
+    for (var i=0;i<order.length;i++){
+      var cls = "cell", val = "-";
+      if (i < records.length){ cls += records[i].ok ? " ok" : " no"; val = records[i].pt; }
+      else if (i === idx){ cls += " cur"; }
+      html += '<div class="'+cls+'">Q'+(i+1)+'<b>'+val+'</b></div>';
+    }
+    board.innerHTML = html;
+  }
+
+  function startGame(){
+    order = shuffle(QUESTIONS);
+    idx = 0; score = 0; records = [];
+    $("score").textContent = 0;
+    show("quiz");
+    renderQuestion();
+  }
+
+  function renderQuestion(){
+    var q = order[idx];
+    locked = false;
+    $("progress").textContent = "문제 " + (idx+1) + " / " + order.length;
+    updateBoard();
+    $("meaning").textContent = q.ko;
+    $("feedback").className = "feedback";
+    $("nextrow").classList.remove("show");
+    $("btn-next").textContent = (idx === order.length-1) ? "결과 보기 🏁" : "다음 문제 ▶";
+
+    var box = $("options");
+    box.innerHTML = "";
+    var letters = ["A","B","C","D"];
+    shuffle([q.answer].concat(q.wrong)).forEach(function(text, i){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "opt";
+      b.dataset.value = text;
+      b.innerHTML = '<span class="let">'+letters[i]+'</span><span class="txt"></span>';
+      b.querySelector(".txt").textContent = text;
+      b.addEventListener("click", function(){ choose(b, text); });
+      box.appendChild(b);
+    });
+    startTimer();
+  }
+
+  function startTimer(){
+    stopTimer();
+    deadline = Date.now() + TIME_LIMIT*1000;
+    updateTimer();
+    timerId = setInterval(updateTimer, 100);
+  }
+  function stopTimer(){ if (timerId){ clearInterval(timerId); timerId = null; } }
+  function updateTimer(){
+    var left = Math.max(0, deadline - Date.now());
+    var sec = Math.ceil(left/1000);
+    $("timer-num").textContent = sec;
+    $("timer-fill").style.width = (left/(TIME_LIMIT*1000)*100) + "%";
+    var warn = left <= 3000;
+    $("timer-fill").classList.toggle("warn", warn);
+    $("timer-num").classList.toggle("warn", warn);
+    if (left <= 0){ stopTimer(); finishQuestion(null, null); }
+  }
+
+  function choose(btn, value){
+    if (locked) return;
+    stopTimer();
+    finishQuestion(btn, value);
+  }
+
+  // btn === null 이면 시간 초과
+  function finishQuestion(btn, value){
+    if (locked) return;
+    locked = true;
+    var q = order[idx];
+    var correct = (value === q.answer);
+    if (correct){ score += POINT; $("score").textContent = score; }
+    records.push({ko:q.ko, en:q.answer, ok:correct, pt:correct ? POINT : 0});
+    updateBoard();
+
+    document.querySelectorAll(".opt").forEach(function(o){
+      o.disabled = true;
+      if (o.dataset.value === q.answer) o.classList.add("correct");
+      else if (o === btn) { o.classList.add("wrong","shake"); }
+      else o.classList.add("dim");
+    });
+
+    var fb = $("feedback");
+    if (correct){
+      fb.className = "feedback show ok";
+      $("fb-head").textContent = "⭕ 정답입니다! +" + POINT + "점";
+    } else if (btn === null){
+      fb.className = "feedback show no";
+      $("fb-head").textContent = "⏰ 시간 초과! 정답: " + q.answer;
+    } else {
+      fb.className = "feedback show no";
+      $("fb-head").textContent = "❌ 오답입니다. 정답: " + q.answer;
+    }
+    $("fb-note").textContent = q.ko + " = " + q.answer + " — " + q.note;
+    $("fb-score").textContent = "이번 문제 " + (correct ? POINT : 0) + "점 획득 (누적 " + score + "점)";
+    $("nextrow").classList.add("show");
+    $("btn-next").focus({preventScroll:true});
+    $("nextrow").scrollIntoView({behavior:"smooth", block:"nearest"});
+  }
+
+  function next(){
+    if (!locked) return;
+    idx++;
+    if (idx >= order.length) showResult();
+    else renderQuestion();
+  }
+
+  function showResult(){
+    stopTimer();
+    $("final-score").textContent = score;
+    var correctCount = score / POINT;
+    var msg;
+    if (score === 100) msg = "🏆 완벽해요! 의학용어 마스터!";
+    else if (score >= 80) msg = "👏 훌륭해요! 예비 간호사 합격!";
+    else if (score >= 60) msg = "😊 좋아요! 조금만 더 복습해요.";
+    else msg = "💪 괜찮아요! 다시 도전해 봐요.";
+    $("final-msg").textContent = msg;
+    $("final-detail").textContent = order.length + "문제 중 " + correctCount + "문제를 맞혔어요.";
+    var ul = $("review");
+    ul.innerHTML = "";
+    records.forEach(function(r){
+      var li = document.createElement("li");
+      li.innerHTML = '<span class="mark '+(r.ok?"o":"x")+'">'+(r.ok?"O":"X")+'</span><span class="ko"></span><span class="en"></span><span class="pt '+(r.ok?"o":"x")+'">'+r.pt+'점</span>';
+      li.querySelector(".ko").textContent = r.ko;
+      li.querySelector(".en").textContent = r.en;
+      ul.appendChild(li);
+    });
+    show("result");
+  }
+
+  $("btn-start").addEventListener("click", startGame);
+  $("btn-next").addEventListener("click", next);
+  $("btn-restart").addEventListener("click", function(){ stopTimer(); startGame(); });
+
+  // 탭을 떠났다 돌아와도 남은 시간이 정확히 계산되도록 deadline 방식 사용
+})();
+</script>
+</body>
+</html>
